@@ -3,6 +3,15 @@ import type { NextRequest } from "next/server"
 
 export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
+  const acceptHeader = request.headers.get("accept") || ""
+
+  // Handle root path content negotiation
+  if (pathname === "/" || pathname === "/.md") {
+    if (pathname === "/.md" || acceptHeader.includes("text/markdown")) {
+      const markdownUrl = new URL("/api/blog/markdown", request.url)
+      return NextResponse.rewrite(markdownUrl)
+    }
+  }
 
   // Check if the request is for a blog post
   const blogPostMatch = pathname.match(/^\/blog\/([^/]+)$/)
@@ -18,7 +27,6 @@ export function proxy(request: NextRequest) {
     }
     
     // Check Accept header for text/markdown content negotiation
-    const acceptHeader = request.headers.get("accept") || ""
     if (acceptHeader.includes("text/markdown")) {
       const markdownUrl = new URL(`/api/blog/${slug}/markdown`, request.url)
       return NextResponse.rewrite(markdownUrl)
@@ -29,5 +37,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/blog/:path*"],
+  matcher: ["/", "/.md", "/blog/:path*"],
 }
